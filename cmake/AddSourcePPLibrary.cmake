@@ -1,7 +1,5 @@
-include_guard(GLOBAL)
-
 function(add_sourcepp_library TARGET)
-    cmake_parse_arguments(PARSE_ARGV 1 OPTIONS "C;CSHARP;PYTHON;WASM;TEST;BENCH" "" "")
+    cmake_parse_arguments(PARSE_ARGV 1 OPTIONS "C;CSHARP;PYTHON;TEST;BENCH" "" "")
     string(TOUPPER ${TARGET} TARGET_UPPER)
     if(SOURCEPP_USE_${TARGET_UPPER})
         set(PROPAGATE_VARS "")
@@ -21,23 +19,22 @@ function(add_sourcepp_library TARGET)
             configure_file("${CMAKE_CURRENT_SOURCE_DIR}/lang/csharp/src/sourcepp/TARGET.csproj.in" "${CMAKE_CURRENT_SOURCE_DIR}/lang/csharp/src/${TARGET}/${TARGET}.csproj")
             add_custom_target(sourcepp_${TARGET}_csharp DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/lang/csharp/src/${TARGET}/${TARGET}.csproj")
             add_dependencies(sourcepp_${TARGET}_csharp sourcepp::${TARGET}c)
-            add_custom_command(TARGET sourcepp::${TARGET}c POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_BINARY_DIR}/sourcepp_${TARGET}c${CMAKE_SHARED_LIBRARY_SUFFIX}" "${CMAKE_CURRENT_SOURCE_DIR}/lang/csharp/src/${TARGET}")
+
+            # Quick hack to let tell VS to place the dlls in the right spot
+            # Can be removed/dropped if needed
+            if(CMAKE_GENERATOR MATCHES "Visual Studio")
+                add_custom_command(TARGET sourcepp::${TARGET}c POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_BINARY_DIR}/${CMAKE_CFG_INTDIR}/sourcepp_${TARGET}c${CMAKE_SHARED_LIBRARY_SUFFIX}" "${CMAKE_CURRENT_SOURCE_DIR}/lang/csharp/src/${TARGET}")
+            else()
+                add_custom_command(TARGET sourcepp::${TARGET}c POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_BINARY_DIR}/sourcepp_${TARGET}c${CMAKE_SHARED_LIBRARY_SUFFIX}" "${CMAKE_CURRENT_SOURCE_DIR}/lang/csharp/src/${TARGET}")
+            endif()
         endif()
 
         # Add Python
         if(SOURCEPP_BUILD_PYTHON_WRAPPERS AND OPTIONS_PYTHON)
-            list(APPEND ${${PROJECT_NAME}_PYTHON}_DEPS sourcepp::${TARGET})
-            list(APPEND ${${PROJECT_NAME}_PYTHON}_DEFINES ${TARGET_UPPER})
-            list(APPEND ${${PROJECT_NAME}_PYTHON}_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/lang/python/src/${TARGET}.h")
-            list(APPEND PROPAGATE_VARS ${${PROJECT_NAME}_PYTHON}_DEPS ${${PROJECT_NAME}_PYTHON}_DEFINES ${${PROJECT_NAME}_PYTHON}_SOURCES)
-        endif()
-
-        # Add WASM
-        if(SOURCEPP_BUILD_WASM_WRAPPERS AND OPTIONS_WASM)
-            list(APPEND ${${PROJECT_NAME}_WASM}_DEPS sourcepp::${TARGET})
-            list(APPEND ${${PROJECT_NAME}_WASM}_DEFINES ${TARGET_UPPER})
-            list(APPEND ${${PROJECT_NAME}_WASM}_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/lang/wasm/src/${TARGET}.h")
-            list(APPEND PROPAGATE_VARS ${${PROJECT_NAME}_WASM}_DEPS ${${PROJECT_NAME}_WASM}_DEFINES ${${PROJECT_NAME}_WASM}_SOURCES)
+            list(APPEND ${SOURCEPP_PYTHON_NAME}_DEPS sourcepp::${TARGET})
+            list(APPEND ${SOURCEPP_PYTHON_NAME}_DEFINES ${TARGET_UPPER})
+            list(APPEND ${SOURCEPP_PYTHON_NAME}_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/lang/python/src/${TARGET}.h")
+            list(APPEND PROPAGATE_VARS ${SOURCEPP_PYTHON_NAME}_DEPS ${SOURCEPP_PYTHON_NAME}_DEFINES ${SOURCEPP_PYTHON_NAME}_SOURCES)
         endif()
 
         # Add tests
