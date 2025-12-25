@@ -276,7 +276,7 @@ namespace vtfpp
 		{
 			unsafe
 			{
-				/// @todo Is there a better way for this?
+				// Nested fixed statements are the standard pattern for pinning multiple ref parameters
 				fixed (uint* offsetPtr = &offset)
 				{
 					fixed (uint* lengthPtr = &length)
@@ -288,7 +288,7 @@ namespace vtfpp
 		}
 	}
 
-	class ImageDimensions
+	public class ImageDimensions
 	{
 		public static uint GetMipDim(byte mip, ushort dim)
 		{

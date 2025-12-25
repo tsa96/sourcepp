@@ -37,14 +37,19 @@ namespace vtfpp.test
 			{
 				if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 				{
-					// CHANGE BEFORE COMMIT!!!
-					return @"F:/SteamLibrary/steamapps/common/Portal/portal/";
+					// Use environment variable or try common Steam location
+					var testPath = Environment.GetEnvironmentVariable("SOURCEPP_TEST_DATA_PATH");
+					if (!string.IsNullOrEmpty(testPath))
+						return testPath;
+					var steamPath = @"C:\Program Files (x86)\Steam\steamapps\common\Portal\portal\";
+					if (Directory.Exists(steamPath))
+						return steamPath;
 				}
 				if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
 				{
 					return Environment.GetEnvironmentVariable("HOME") + "/.steam/steam/steamapps/common/Portal/portal/";
 				}
-				throw new FileLoadException("Unable to find Steam install directory!");
+				throw new FileNotFoundException("Portal test data not found. Set SOURCEPP_TEST_DATA_PATH or install Portal.");
 			}
 		}
 	}
